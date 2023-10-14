@@ -1,1298 +1,265 @@
-import 'package:flutter/material.dart';
+// ignore: unused_import
+import 'dart:async';
+import 'package:flutter_application_1/bottom_bar.dart';
+import 'package:flutter_application_1/dbHelper.dart/mongodb.dart';
 
-void main() => runApp(MyApp());
+// ignore: unused_import
+import 'login_signup.dart';
+import 'package:animated_splash_screen/animated_splash_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await MongoDatabase.connect();
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: MyHomePage(title: ''),
-    );
+        debugShowCheckedModeBanner: false,
+        home: AnimatedSplashScreen(
+            duration: 5000,
+            splash: Center(
+              child: Image.asset('assets/images/logo_transparent.png'),
+            ),
+            splashIconSize: 400,
+            nextScreen: OnboardingScreen(),
+            splashTransition: SplashTransition.fadeTransition,
+            backgroundColor: Colors.white));
   }
 }
 
-class DashedLinePainter extends CustomPainter {
+class OnboardingScreen extends StatefulWidget {
   @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = Colors.grey
-      ..strokeWidth = 1
-      ..strokeCap = StrokeCap.round;
+  _OnboardingScreenState createState() => _OnboardingScreenState();
+}
 
-    final double dashWidth = 5;
-    final double dashSpace = 2;
-    double startX = 0;
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  final PageController _pageController = PageController(initialPage: 0);
+  int _currentPage = 0;
+  List<OnboardingPage> _pages = [
+    OnboardingPage(
+      animation: 'assets/images/hello.json',
+      title: 'Welcome to NeoGenie',
+      description:
+          'NeoGenie is an innovative mobile application designed to revolutionize your daily life. With a sleek and intuitive interface, NeoGenie offers a range of advanced features and personalized services to enhance your mobile experience.',
+    ),
+    OnboardingPage(
+      animation: 'assets/images/data_track.json',
+      title: 'Track Your Data Usage',
+      description:
+          'Our app helps you monitor your data usage in real-time, providing you with detailed insights and analytics',
+    ),
+    OnboardingPage(
+      animation: 'assets/images/ai.json',
+      title: 'Predict Data Packages',
+      description:
+          'Experience the power of artificial intelligence with NeoGenie'
+          's advanced data package prediction feature. Our cutting-edge AI technology analyzes your historical data usage patterns, device behavior, and user preferences to accurately forecast your future data needs',
+    ),
+    OnboardingPage(
+      animation: 'assets/images/start.json',
+      title: 'Get Started with NeoGenie',
+      description:
+          'So, Welcome back to a smarter way of managing your mobile experience with NeoGenie',
+    ),
+  ];
 
-    while (startX < size.width + dashWidth + dashSpace) {
-      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
-      startX += dashWidth + dashSpace;
+  void _onPageChanged(int index) {
+    setState(() {
+      _currentPage = index;
+    });
+  }
+
+  void _navigateToNext() {
+    if (_currentPage < _pages.length - 1) {
+      _pageController.nextPage(
+        duration: Duration(milliseconds: 300),
+        curve: Curves.ease,
+      );
+    } else {
+      // Navigate to the next screen (e.g., home screen)
+      // Replace `NextScreen()` with your desired screen.
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LottieAnimationScreen()),
+      );
     }
   }
 
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return false;
+  void _skipOnboarding() {
+    // Navigate to the next screen without completing onboarding
+    // Replace `NextScreen()` with your desired screen.
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LottieAnimationScreen()),
+    );
   }
-}
-
-class MyHomePage extends StatelessWidget {
-  final String title;
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ListView(
-        children: <Widget>[
-          Card(
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(14.0),
-              child: Text(
-                'Social Media',
-                textAlign: TextAlign.left,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange,
+      body: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            itemCount: _pages.length,
+            onPageChanged: _onPageChanged,
+            itemBuilder: (context, index) {
+              return _pages[index];
+            },
+          ),
+          Padding(
+            padding: EdgeInsets.all(20.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: _skipOnboarding,
+                  child: Text(
+                    'Skip',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
+                Row(
+                  children: [
+                    for (int i = 0; i < _pages.length; i++)
+                      _buildPageIndicator(i == _currentPage),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: _navigateToNext,
+                  child: Text(
+                    _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        width: 180,
-                        height: 200,
-                        color: Colors.white.withOpacity(0.8),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'UNLIMITED',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'ANY-NETWORK CALLS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '+',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'Non Stop',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(height: 5),
-                              Icon(
-                                Icons.facebook,
-                                size: 22,
-                                color: Colors.blue,
-                              ),
-                              Text(
-                                '30 GB',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'Rs. 888',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '30 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 200,
-                        color: Colors.white.withOpacity(0.8),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'ANY NETWORK',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'UNLIMITED CALLS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'FREE 3GB',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '+',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'Non Stop',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(height: 5),
-                              Icon(
-                                Icons.facebook,
-                                size: 22,
-                                color: Colors.blue,
-                              ),
-                              Text(
-                                'Rs. 749',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '30 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'ANY NETWORK',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'UNLIMITED CALLS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                  color: Color(0xff9b8383),
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              CustomPaint(
-                                size: Size(60, 1),
-                                painter: DashedLinePainter(),
-                              ),
-                              Text(
-                                'NON-STOP',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 26,
-                                  color: Color(0xffb99618),
-                                ),
-                              ),
-                              Text(
-                                'ANYTIME DATA',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-
-                              SizedBox(
-                                height: 5,
-                              ), // Adding some spacing between the text and the icon
-
-                              Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      width: 67,
-                                      height: 25,
-                                      margin: EdgeInsets.only(right: 10),
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        'Rs.1499',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      width: 70,
-                                      height: 25,
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        '30 DAYS',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'UNLIMITED',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'ANY-NETWORK CALLS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '+',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'NON-STOP',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                  color: Color(0xff8a7d0e),
-                                ),
-                              ),
-                              SizedBox(
-                                height: 5,
-                              ), // Adding some spacing between the text and the icon
-                              Icon(
-                                Icons.facebook,
-                                size: 22,
-                                color: Colors.blue,
-                              ),
-                              Text(
-                                '7 GB',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'Rs. 288',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '7 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'ANY NETWORK',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'UNLIMITED CALLS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '+',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'Non Stop',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(
-                                height: 5,
-                              ), // Adding some spacing between the text and the icon
-                              Icon(
-                                Icons.facebook,
-                                size: 22,
-                                color: Colors.blue,
-                              ),
-                              Text(
-                                'FREE 6GB',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'Rs. 1199',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '60 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'ANY NETWORK',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'UNLIMITED CALLS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '+',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'Non Stop',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(
-                                height: 5,
-                              ), // Adding some spacing between the text and the icon
-                              Icon(
-                                Icons.facebook,
-                                size: 22,
-                                color: Colors.blue,
-                              ),
-                              Text(
-                                'FREE 9GB',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'Rs. 1575',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '90 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Card(
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(14.0),
-              child: Text(
-                'Social Media + Gaming + Work & Study',
-                textAlign: TextAlign.left,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange,
-                ),
-              ),
-            ),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        width: 180,
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'NON-STOP',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 22,
-                                  color: Color(0xff8c8116),
-                                ),
-                              ),
-                              Text(
-                                'Super Combo',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-
-                              SizedBox(
-                                height: 5,
-                              ), // Adding some spacing between the text and the icon
-                              Icon(
-                                Icons.facebook,
-                                size: 22,
-                                color: Colors.blue,
-                              ),
-
-                              Text(
-                                'Rs. 479',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '30 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'NON-STOP',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 22,
-                                  color: Color(0xffacaa16),
-                                ),
-                              ),
-
-                              SizedBox(
-                                height: 12,
-                              ), // Adding some spacing between the text and the icon
-                              Icon(
-                                Icons.facebook,
-                                size: 22,
-                                color: Colors.blue,
-                              ),
-                              SizedBox(
-                                height: 12,
-                              ),
-
-                              Text(
-                                'Rs. 479',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(
-                                height: 12,
-                              ),
-                              Text(
-                                '30 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Non-Stop TikTok',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(
-                                height: 12,
-                              ),
-                              // Adding some spacing between the text and the icon
-                              Icon(
-                                Icons.facebook,
-                                size: 22,
-                                color: Colors.blue,
-                              ),
-                              SizedBox(
-                                height: 12,
-                              ),
-
-                              Text(
-                                'Rs. 353',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(
-                                height: 12,
-                              ),
-                              Text(
-                                '30 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Non-Stop TikTok',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(
-                                height: 12,
-                              ),
-                              // Adding some spacing between the text and the icon
-                              Icon(
-                                Icons.facebook,
-                                size: 22,
-                                color: Colors.blue,
-                              ),
-                              SizedBox(
-                                height: 12,
-                              ),
-
-                              Text(
-                                'Rs. 89',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(
-                                height: 12,
-                              ),
-                              Text(
-                                '7 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'NON-STOP',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                'YOUTUBE',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '+',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '3GB',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(
-                                height: 13,
-                              ), // Adding some spacing between the text and the icon
-
-                              Text(
-                                'Rs. 435',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '30 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'NON-STOP',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 22,
-                                  color: Color(0xff8c7f10),
-                                ),
-                              ),
-
-                              SizedBox(
-                                height: 13,
-                              ), // Adding some spacing between the text and the icon
-                              Icon(
-                                Icons.facebook,
-                                size: 22,
-                                color: Colors.blue,
-                              ),
-                              SizedBox(
-                                height: 13,
-                              ),
-
-                              Text(
-                                'Rs. 361',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(
-                                height: 13,
-                              ),
-                              Text(
-                                '30 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Divider(
-            color: Colors.white,
-            height: 8,
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        width: 180,
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'NON-STOP',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 22,
-                                  color: Color(0xff9d9618),
-                                ),
-                              ),
-                              Text(
-                                'Super Combo',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-
-                              SizedBox(
-                                height: 5,
-                              ), // Adding some spacing between the text and the icon
-                              Icon(
-                                Icons.facebook,
-                                size: 22,
-                                color: Colors.blue,
-                              ),
-
-                              Text(
-                                'Rs. 479',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                '30 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    // Action when the box is tapped
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black, // Set the border color here
-                        width: 2.0, // Set the border width here
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 200,
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                'NON-STOP',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 22,
-                                  color: Color(0xffacaa16),
-                                ),
-                              ),
-
-                              SizedBox(
-                                height: 12,
-                              ), // Adding some spacing between the text and the icon
-                              Icon(
-                                Icons.facebook,
-                                size: 22,
-                                color: Colors.blue,
-                              ),
-                              SizedBox(
-                                height: 12,
-                              ),
-
-                              Text(
-                                'Rs. 479',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(
-                                height: 12,
-                              ),
-                              Text(
-                                '30 DAYS',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
+      ),
+    );
+  }
+
+  AnimatedContainer _buildPageIndicator(bool isActive) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      margin: EdgeInsets.symmetric(horizontal: 4.0),
+      height: 8.0,
+      width: isActive ? 24.0 : 8.0,
+      decoration: BoxDecoration(
+        color: isActive ? Colors.blue : Colors.grey,
+        borderRadius: BorderRadius.circular(5.0),
+      ),
+    );
+  }
+}
+
+class OnboardingPage extends StatelessWidget {
+  final String animation;
+  final String title;
+  final String description;
+
+  const OnboardingPage({
+    required this.animation,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(20.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Lottie.asset(
+            animation,
+            height: 300.0,
+            width: 300.0,
+          ),
+          SizedBox(height: 30.0),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 24.0,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 20.0),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18.0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class LottieAnimationScreen extends StatefulWidget {
+  const LottieAnimationScreen({super.key});
+
+  @override
+  _LottieAnimationScreenState createState() => _LottieAnimationScreenState();
+}
+
+class _LottieAnimationScreenState extends State<LottieAnimationScreen> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start the timer after the widget is initialized
+    _timer = Timer(const Duration(milliseconds: 2900), () {
+      // Navigate to the home screen after 5 seconds
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => BottomBar()),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    // Cancel the timer when the widget is disposed
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Container(
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
+          child: FittedBox(
+            fit: BoxFit.fitWidth,
+            child: Lottie.asset(
+              'assets/images/waiting.json',
+              width: 100,
+              height: 100,
+            ),
+          ),
+        ),
       ),
     );
   }
